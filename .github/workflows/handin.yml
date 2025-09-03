@@ -31,7 +31,7 @@ jobs:
       contents: read 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.0.0
+        uses: actions/checkout@v4
       - name: Upload Repository artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -117,7 +117,7 @@ jobs:
       # Cache LaTeX packages
       - name: Cache LaTeX packages
         id: latex-cache
-        uses: actions/cache@v4.0.0
+        uses: actions/cache@v4
         with:
           path: |
             /usr/share/texlive/
