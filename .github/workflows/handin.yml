@@ -33,7 +33,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.0.0
       - name: Upload Repository artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: repository-artifacts
           path: .
@@ -48,7 +48,7 @@ jobs:
     continue-on-error: true
     steps:
       - name: Download repository artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: repository-artifacts
           path: .
@@ -66,7 +66,7 @@ jobs:
     needs: code-analysis
     steps:
       - name: Download repository artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: repository-artifacts
           path: .
@@ -75,7 +75,7 @@ jobs:
         run:  echo "build app"
       # Upload compiled artifact
       - name: Upload Build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifact
           path: ./src # Replace with path to your compiled artifact
@@ -91,7 +91,7 @@ jobs:
     steps:
       # Download build artifact and use for applicaiton tests
       - name: Download build artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build-artifact
           path: ./build
@@ -145,7 +145,7 @@ jobs:
           mv report/GroupTemplate/main.pdf handin/report${{ env.GROUP_NUMBER }}.pdf
       
       - name: Upload GroupReport-pdf artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: GroupReport-pdf 
           path: handin/
@@ -158,25 +158,25 @@ jobs:
     steps:
       # Download Repo
       - name: Download repository artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: repository-artifacts
           path: .
       # Download build artifact if uploaded earlier and places it in ./build folder
       - name: Download build artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build-artifact
           path: ./build
       # Download GroupReport PDF and place in ./report folder
       - name: Download GroupReport
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: GroupReport-pdf
           path: ./handin
       # Upload final handin artifcat, can be downloaded from Repository -> Actions -> handin-workflow -> Scroll down and click
       - name: Upload handin artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: handin-${{ env.PROJECT_NAME }}-${{ env.GROUP_NUMBER }}
           path: .
