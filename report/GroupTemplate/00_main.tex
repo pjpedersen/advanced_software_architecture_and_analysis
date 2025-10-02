@@ -1,0 +1,120 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{icomma}
+\usepackage[T1]{fontenc}
+
+% Packages
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{rotating}
+\usepackage{mdframed}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{makecell}
+\usepackage{tcolorbox}
+\usepackage{amsthm}
+\usepackage{pifont}
+\usepackage{listings}
+\lstset
+{ 
+    basicstyle=\footnotesize,
+    numbers=left,
+    stepnumber=1,
+    xleftmargin=5.0ex,
+}
+
+% SCJ
+\usepackage{array, multirow}
+\usepackage{enumitem}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Group Report Template}
+
+\author{
+    \IEEEauthorblockN{
+        Student 1\IEEEauthorrefmark{1},
+        Student 2\IEEEauthorrefmark{1},
+        Student 3\IEEEauthorrefmark{1},
+        Student 4\IEEEauthorrefmark{1},
+        Student 5\IEEEauthorrefmark{1},
+    }
+    \IEEEauthorblockA{
+        University of Southern Denmark, SDU Software Engineering, Odense, Denmark \\
+        Email: \IEEEauthorrefmark{1} \textnormal{\{student1,student2,student3,student4,student5\}}@student.sdu.dk
+    }
+}
+
+\maketitle
+
+\IEEEpubidadjcol
+\begin{abstract}
+This report presents an architectural prototype for an Industry 4.0 production line manufacturing customizable IoT weather displays. The system integrates heterogeneous devices—PLCs, robots, engravers, sensors—under strict requirements: 24/7 availability, continuous deployment, interoperability, and traceability. \\
+
+Our contributions are threefold: (1) a hybrid architecture combining event-driven messaging and microservices to enable real-time coordination in a heterogeneous environment; (2) application of architectural tactics to achieve quality attributes such as availability, security, and deployability in a multi-technology stack; and (3) formal verification of safety interlocks, scheduling invariants, and liveness properties to ensure correctness during dynamic production changes. \\
+
+The prototype demonstrates feasibility for changeover optimization, genealogy tracking, and external API integration, validating that the architecture meets functional and quality goals in a continuously deployable Industry 4.0 context.
+
+\end{abstract}
+
+\begin{IEEEkeywords}
+Industry 4.0, software architecture, event-driven systems, microservices, formal verification.
+\end{IEEEkeywords}
+
+
+\section{Introduction and Motivation}
+\input{01_introduction}
+
+\section{Problem and Approach}
+\label{sec:problem}
+\input{02_problem}
+
+\section{Related work}
+\label{sec:related_work}
+\input{03_related_work}
+
+\section{Use Case}
+\label{sec:use_case}
+\input{04_use_cases}
+
+\section{Quality Attribute Scenario}
+\label{sec:qas}
+\input{05_quality_attribute_scenarios}
+
+\section{Design and Analysis Modeling}
+\label{sec:design_and_analysis_modeling}
+\input{06_design_and_analysis}
+
+
+\section{Formal verification and validation}
+\label{sec:formal_v_and_v}
+\input{07_formal_verification}
+
+\section{Evaluation}
+\label{sec:evaluation}
+\input{08_evaluation}
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+\input{09_conclusion}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\vspace{12pt}
+
+\newpage
+\section*{Contributions}
+\begin{tabular}{l|p{0.6\linewidth}}
+Name & Contribution\\
+\end{tabular}
+\end{document}

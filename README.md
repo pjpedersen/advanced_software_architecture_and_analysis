@@ -1,56 +1,8 @@
-# Advanced Software Architecture and Analysis Portfolio Template
+# ASAAT - Group Project
 
-- [Introduction](#introduction)
-  - [.github](#github)
-    - [CI/CD Workflow](#cicd-workflow)
-    - [Hand in Workflow](#hand-in-workflow)
-  - [.vscode](#vscode)
-  - [Report](#report)
-  - [Src](#src)
-- [Compiling Latex](#compiling-latex)
-  - [Option 1: LaTeX Workshop + TeX Live](#option-1-latex-workshop--tex-live)
-    - [Extension](#extension)
-    - [Link to download TeX Live](#link-to-download-tex-live)
-  - [Option 2: Trigger Task on Save + Docker](#option-2-trigger-task-on-save--docker)
-    - [Compilation of latex on save](#compilation-of-latex-on-save)
-  - [Option 3: Overleaf](#option-3-overleaf)
-- [Recommended VSCode Extension](#recommended-vscode-extension)
 
 ## Introduction
-This repository serves as a template for students of Advanced Software Engineering to structure their portfolio project.
 
-Below is the detailed overview of the repository structure:
-
-<pre>
-.
-├── .github/
-│   └── workflows/
-│       ├── ci-cd.yml
-│       └── handin.yml
-├── .vscode/
-│   ├── settings.json
-│   └── tasks.json
-├── Report/
-│   ├── GroupTemplate/
-│   └── ReflectionsTemplate/
-├── Src/
-└── .gitignore
-</pre>
-
-## .github
-This folder contains template workflows designed for CI/CD processes and for generating the final submission artifacts.
-
-### CI/CD Workflow
-The CI/CD workflow is split into several jobs:
-
-![cicdworkflow](images/cicdworkflow.png)
-
-- **Clone repository**: Clones the repository, creates an artifact from it, and then uploads this artifact, ensuring consistency across all jobs.
-- **Code analysis**: Utilize this job for linting or any other static code analysis tools you'd like to incorporate.
-- **Build application**: Compile the source code. After compiling, the artifact is uploaded for easy accessibility, aiding in debugging and local testing.
-- **Test application**: Run tests that require the code to be compiled. This step downloads the compiled artifact created in the previous step.
-- **Build and push image**: Builds an image using a specified `DockerFile` and pushes the image to the GitHub container registry specific to the repository owner.
-- **Deploy application**: Can be used to deploy the image(s) generated during the workflow onto your virtual machines.
 
 ### Hand in Workflow
 The hand-in workflow includes some of the jobs from the CI/CD workflow and some additional ones:
