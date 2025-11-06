@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package i40.common.v1;
+
+option go_package = "github.com/i40/production-system/api/gen/go/common/v1;commonv1";
+
+import "google/protobuf/timestamp.proto";
+
+// Correlation tracking for observability
+message CorrelationContext {
+  string trace_id = 1;
+  string span_id = 2;
+  string parent_span_id = 3;
+  map<string, string> baggage = 4;
+}
+
+// Standard metadata for all events
+message EventMetadata {
+  string event_id = 1;
+  string event_type = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  string source_service = 4;
+  CorrelationContext correlation = 5;
+  int32 schema_version = 6;
+}
+
+// Color codes for production batches
+enum ColorCode {
+  COLOR_UNSPECIFIED = 0;
+  COLOR_BLACK = 1;
+  COLOR_WHITE = 2;
+  COLOR_RED = 3;
+  COLOR_BLUE = 4;
+  COLOR_GREEN = 5;
+  COLOR_YELLOW = 6;
+  COLOR_CUSTOM = 99;
+}
+
+// Production site identifier
+message SiteId {
+  string site_code = 1;
+  string region = 2;
+}
+
+// Device identity
+message DeviceId {
+  string unit_id = 1;
+  string serial_number = 2;
+  string pcb_id = 3;
+}
+
+// Quality status
+enum QualityStatus {
+  QUALITY_UNSPECIFIED = 0;
+  QUALITY_PASS = 1;
+  QUALITY_FAIL = 2;
+  QUALITY_REWORK = 3;
+  QUALITY_PENDING = 4;
+}
+
+// Result codes
+enum ResultCode {
+  RESULT_SUCCESS = 0;
+  RESULT_FAILURE = 1;
+  RESULT_TIMEOUT = 2;
+  RESULT_INVALID_REQUEST = 3;
+  RESULT_NOT_FOUND = 4;
+  RESULT_ALREADY_EXISTS = 5;
+  RESULT_PERMISSION_DENIED = 6;
+}
+
+// Generic error detail
+message ErrorDetail {
+  string code = 1;
+  string message = 2;
+  map<string, string> metadata = 3;
+}

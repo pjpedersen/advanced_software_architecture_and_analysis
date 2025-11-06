@@ -1,0 +1,92 @@
+% FEEDBACK:
+% - More thorough abbreviation explanation
+
+As established in the introduction, a key component of this research is the implementation of an architectural prototype for a smart manufacturing system for the production of IoT weather displays. This prototype serves to address the research questions formulated in Section \ref{sec:problem}. The following section details these use cases, including their descriptions, relevant actors, and preconditions.
+
+\subsection*{UC-1: Schedule Color-Batch Production Run}
+\begin{itemize}
+    \item \textbf{Actors:} Production Manager, Operator
+    \item \textbf{Preconditions:} Verified order backlog; color pellets available; line in steady state
+    \item \textbf{Steps:}
+    \begin{enumerate}
+        \item Manager selects quantity, color and due window
+        \item Scheduler checks resource calendars, computes plan and posts a \code{ProductionPlan} event
+        \item HMI instructs Operator to load pellets
+        \item On operator confirmation, system updates KPIs and WIP as events
+    \end{enumerate}
+    \item \textbf{Postconditions:} A scheduled plan is live; all stations subscribed; changeover windows reserved.
+\end{itemize}
+
+\subsection*{UC-2: Secure Flashing \& Registration of Control Boards}
+\begin{itemize}
+    \item \textbf{Actors:} Test/Flash Station, Release Service, Device Registry, Operator
+    \item \textbf{Preconditions:} Signed firmware in artifact repo; board passes visual inspection.
+    \item \textbf{Steps:}
+    \begin{enumerate}
+        \item Operator scans PCBA ID
+        \item Station requests a signed firmware matching BOM.
+        \item Release Service verifies signature and policy
+        \item Flash station programs firmware; runs post-flash functional tests
+        \item On pass, station requests device identity (cryptographic key) from Device Registry.
+        \item Registry writes genealogy link (enclosure $\leftrightarrow$ PCBA $\leftrightarrow$ firmware version).
+        \item Event published: \code{DeviceRegistered} with cryptographic material stored securely.
+    \end{enumerate}
+    \item \textbf{Postconditions:} Device uniquely identified, flashed, and linked to genealogy.
+\end{itemize}
+
+\subsection*{UC-3: Automated Hardware Validation Gate}
+\begin{itemize}
+    \item \textbf{Actors:} Validation Station, Quality Service, PLC, HMI
+    \item \textbf{Preconditions:} Device assembled; fixtures calibrated.
+    \item \textbf{Steps:}
+    \begin{enumerate}
+        \item PLC routes unit to validation station buffer; station claims the unit via. \code{BufferClaim} event
+        \item Station runs in-circuit/functional tests (ICT); streams metrics to a database.
+        \item Quality Service applies rules/thresholds; emits \code{HardwareValidation} event with reasons.
+        \item PLC gates the unit to pass lane or rework lane.
+        \item HMI shows result and top failure contributors for operator action.
+    \end{enumerate}
+    \item \textbf{Postconditions:} Each unit is dispositioned with traceable results.
+\end{itemize}
+
+\subsection*{UC-4: Engraver Customization Workflow}
+\begin{itemize}
+    \item \textbf{Actors:} Sales Order Service, Engraver Controller, Production Scheduler, Operator
+    \item \textbf{Preconditions:} Sales order includes engraving text/template; compatible enclosure selected.
+    \item \textbf{Steps:}
+    \begin{enumerate}
+        \item Sales posts \code{CustomizationRequested} event with template parameters.
+        \item Scheduler inserts engraving tasks aligned with color batches to minimize changeovers.
+        \item Engraver fetches toolpaths, previews on HMI for operator verify.
+        \item Controller engraves per unit; telemetry logged to genealogy.
+    \end{enumerate}
+    \item \textbf{Postconditions:} Units engraved per order requirements; audit retained.
+\end{itemize}
+
+\subsection*{UC-5: Color Changeover \& Refill Interlock}
+\begin{itemize}
+    \item \textbf{Actors:} PLC, Operator, Scheduler, Moulding Machine
+    \item \textbf{Preconditions: } Next batch color $\neq$ current; pellets for next batch available
+    \item \textbf{Steps:}
+    \begin{enumerate}
+        \item Scheduler signals \code{ChangeoverStart}; PLC drains in-flight parts to buffer.
+        \item HMI instructs operator to swap pellet bins; safety interlock enforces stop.
+        \item PLC verifies bin color via sensor; resumes cycle and acknowledges \code{ChangeoverDone}
+    \end{enumerate}
+    \item \textbf{Postconditions: } Line resumes with new color; scrap accounted.
+
+\end{itemize}
+
+\subsection*{UC-6: Full Device Genealogy \& Recall}
+\begin{itemize}
+    \item \textbf{Actors: } Quality Manager(QM), Genealogy Service, WMS/Shipping
+    \item \textbf{Preconditions: } Suspected defect linked to firmware version X and PCBA revision C.
+    \item \textbf{Steps: }
+    \begin{enumerate}
+        \item Query genealogy: find all shipped units with (firmware X $\wedge$ PCBA rev. C).
+        \item Assess validation data for affected units, and formulate root-cause-analysis(RCA) and lessons learned
+        \item Generate recall list with shipping lots and customer contacts.
+        \item Notify customers and inform of remidation
+    \end{enumerate}
+    \item \textbf{Postconditions:} Traceable recall campaign.
+\end{itemize}

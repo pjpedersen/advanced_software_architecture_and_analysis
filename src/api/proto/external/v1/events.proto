@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package i40.external.v1;
+
+option go_package = "github.com/i40/production-system/api/gen/go/external/v1;externalv1";
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// UC-6: Weather Data Update Event
+message WeatherDataUpdatedEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string source_provider = 2;
+  repeated WeatherObservation observations = 3;
+  DataQualityMetrics quality = 4;
+  google.protobuf.Timestamp ingested_at = 5;
+}
+
+message WeatherObservation {
+  string location_id = 1;
+  double latitude = 2;
+  double longitude = 3;
+  google.protobuf.Timestamp observation_time = 4;
+  double temperature_celsius = 5;
+  double humidity_percent = 6;
+  double pressure_hpa = 7;
+  double wind_speed_mps = 8;
+  double wind_direction_degrees = 9;
+  string conditions = 10;
+}
+
+message DataQualityMetrics {
+  bool is_fresh = 1;
+  int64 age_seconds = 2;
+  bool is_complete = 3;
+  repeated string missing_fields = 4;
+  bool units_validated = 5;
+  repeated Anomaly anomalies = 6;
+}
+
+message Anomaly {
+  string field_name = 1;
+  string description = 2;
+  double confidence_score = 3;
+}
+
+// External API call tracking
+message ExternalAPICallEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string provider = 2;
+  string endpoint = 3;
+  int32 status_code = 4;
+  double latency_ms = 5;
+  bool circuit_breaker_tripped = 6;
+  int32 retry_attempt = 7;
+  google.protobuf.Timestamp called_at = 8;
+}
+
+// Telemetry correlation (factory device data + external weather)
+message CorrelatedDataEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string correlation_id = 2;
+  FactoryTelemetry factory_data = 3;
+  WeatherObservation weather_data = 4;
+  map<string, double> derived_metrics = 5;
+  google.protobuf.Timestamp correlated_at = 6;
+}
+
+message FactoryTelemetry {
+  common.v1.DeviceId device_id = 1;
+  map<string, double> sensor_readings = 2;
+  google.protobuf.Timestamp reading_time = 3;
+}

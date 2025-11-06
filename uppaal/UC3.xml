@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
+<nta>
+	<declaration>// --- Global Constants (The 'Enum' Values) ---
+// Note: No brackets or type name needed. UPPAAL sees these as int constants.
+const int INSPECTING = 0;
+const int PASS       = 1;
+const int FAIL       = 2;
+const int REWORK     = 3;
+const int PACKOUT    = 4;
+
+// --- Global Variables ---
+// We must use 'int' as the type for the variable holding the status.
+int UnitStatus = INSPECTING; 
+
+// --- Synchronization Channels for UC-3 ---
+chan startInspection;
+urgent chan inspectionDone;
+urgent chan routeRework, routePackout;</declaration>
+	<template>
+		<name>RoutingController</name>
+		<location id="id0" x="-272" y="-93">
+			<name x="-331" y="-102">Idle</name>
+		</location>
+		<location id="id1" x="204" y="-93">
+			<name x="229" y="-102">Deciding</name>
+		</location>
+		<init ref="id0"/>
+		<transition id="id2">
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-76" y="85">UnitStatus == FAIL</label>
+			<label kind="synchronisation" x="-76" y="68">routeRework!</label>
+			<label kind="assignment" x="-76" y="51">UnitStatus = REWORK</label>
+			<nail x="-34" y="42"/>
+		</transition>
+		<transition id="id3">
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-93" y="-323">UnitStatus == PASS</label>
+			<label kind="synchronisation" x="-93" y="-340">routePackout!</label>
+			<label kind="assignment" x="-93" y="-357">UnitStatus = PACKOUT</label>
+			<nail x="-34" y="-272"/>
+		</transition>
+		<transition id="id4">
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-102" y="-136">true</label>
+			<label kind="synchronisation" x="-102" y="-119">inspectionDone?</label>
+		</transition>
+	</template>
+	<template>
+		<name>QualityService</name>
+		<location id="id5" x="-442" y="-110">
+			<name x="-452" y="-144">Idle</name>
+		</location>
+		<location id="id6" x="-110" y="-110">
+			<name x="-120" y="-144">Checking</name>
+		</location>
+		<init ref="id5"/>
+		<transition id="id7">
+			<source ref="id6"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-331" y="34">true</label>
+			<label kind="synchronisation" x="-331" y="17">inspectionDone!</label>
+			<label kind="assignment" x="-331" y="0">UnitStatus = FAIL</label>
+			<nail x="-289" y="-8"/>
+		</transition>
+		<transition id="id8">
+			<source ref="id6"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-314" y="-238">true</label>
+			<label kind="synchronisation" x="-340" y="-255">inspectionDone!</label>
+			<label kind="assignment" x="-348" y="-272">UnitStatus = PASS</label>
+			<nail x="-297" y="-204"/>
+		</transition>
+		<transition id="id9">
+			<source ref="id5"/>
+			<target ref="id6"/>
+			<label kind="guard" x="-314" y="-153">true</label>
+			<label kind="synchronisation" x="-357" y="-136">startInspection?</label>
+		</transition>
+	</template>
+	<template>
+		<name x="5" y="5">Unit</name>
+		<declaration>// Place local declarations here.
+</declaration>
+		<location id="id10" x="-527" y="-195">
+			<name x="-537" y="-229">WaitingInspection</name>
+		</location>
+		<location id="id11" x="-136" y="-195">
+			<name x="-170" y="-238">AtRouter</name>
+		</location>
+		<location id="id12" x="102" y="-348">
+			<name x="92" y="-382">ReworkBay</name>
+		</location>
+		<location id="id13" x="76" y="0">
+			<name x="66" y="-34">Shipping</name>
+		</location>
+		<init ref="id10"/>
+		<transition id="id14">
+			<source ref="id11"/>
+			<target ref="id13"/>
+			<label kind="synchronisation" x="-102" y="-59">routePackout?</label>
+		</transition>
+		<transition id="id15">
+			<source ref="id11"/>
+			<target ref="id12"/>
+			<label kind="synchronisation" x="-102" y="-306">routeRework?</label>
+		</transition>
+		<transition id="id16">
+			<source ref="id10"/>
+			<target ref="id11"/>
+			<label kind="synchronisation" x="-391" y="-187">startInspection!</label>
+		</transition>
+	</template>
+	<system>// Instantiate one of each template
+U = Unit();
+QS = QualityService();
+RC = RoutingController();
+
+// Compose the system from the instances
+system U, QS, RC;
+</system>
+	<queries>
+		<query>
+			<formula>E&lt;&gt;(UnitStatus == FAIL &amp;&amp; U.Shipping)</formula>
+			<comment/>
+			<result outcome="failure" type="quality" timestamp="2025-11-14 01:36:45 +0100">
+			</result>
+		</query>
+	</queries>
+</nta>

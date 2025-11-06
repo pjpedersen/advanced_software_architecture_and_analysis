@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alerting rules loaded from a separate file mounted alongside this config.
+rule_files:
+  - /etc/prometheus/alert_rules.yml
+
+scrape_configs:
+  # Scrape Prometheus itself.
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090
+
+  # Scrape local Go services running on the host machine.
+  - job_name: host-services
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:8090']
+        labels:
+          job: scheduler
+      - targets: ['host.docker.internal:8181']
+        labels:
+          job: device-registry
+      - targets: ['host.docker.internal:8089']
+        labels:
+          job: genealogy-service
+      - targets: ['host.docker.internal:8085']
+        labels:
+          job: quality-service

@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package i40.customization.v1;
+
+option go_package = "github.com/i40/production-system/api/gen/go/customization/v1;customizationv1";
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// UC-4: Customization Request Event
+message CustomizationRequestedEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string order_id = 2;
+  string sales_order_id = 3;
+  string template_id = 4;
+  map<string, string> template_parameters = 5;
+  string customer_id = 6;
+  google.protobuf.Timestamp requested_at = 7;
+}
+
+// Engraving task
+message EngravingTaskEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string task_id = 2;
+  string batch_id = 3;
+  common.v1.DeviceId device_id = 4;
+  EngravingTemplate template = 5;
+  google.protobuf.Timestamp scheduled_for = 6;
+}
+
+message EngravingTemplate {
+  string template_id = 1;
+  string content_hash = 2;
+  bytes template_data = 3;
+  TemplateFormat format = 4;
+  map<string, string> parameters = 5;
+}
+
+enum TemplateFormat {
+  FORMAT_UNSPECIFIED = 0;
+  FORMAT_SVG = 1;
+  FORMAT_DXF = 2;
+  FORMAT_GCODE = 3;
+}
+
+// Engraving completion
+message EngravingCompletedEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string task_id = 2;
+  common.v1.DeviceId device_id = 3;
+  string content_hash = 4; // For genealogy
+  bool successful = 5;
+  EngravingMetrics metrics = 6;
+  google.protobuf.Timestamp completed_at = 7;
+}
+
+message EngravingMetrics {
+  double duration_seconds = 1;
+  int32 retry_count = 2;
+  double depth_mm = 3;
+  double speed_mm_per_sec = 4;
+  bool quality_check_passed = 5;
+}
+
+// Template storage
+message TemplateStoredEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string template_id = 2;
+  string content_hash = 3;
+  string storage_url = 4;
+  int64 size_bytes = 5;
+  google.protobuf.Timestamp stored_at = 6;
+}

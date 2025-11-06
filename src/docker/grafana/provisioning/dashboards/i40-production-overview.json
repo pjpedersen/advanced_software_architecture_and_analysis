@@ -1,0 +1,383 @@
+{
+  "title": "I4.0 Production System - Overview",
+  "tags": [
+    "i40",
+    "production",
+    "overview"
+  ],
+  "timezone": "UTC",
+  "schemaVersion": 16,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Service Health Status",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "sum(up{job=~\"scheduler|device-registry|genealogy-service|quality-service\"})",
+          "legendFormat": "Healthy Services"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "red"
+              },
+              {
+                "value": 8,
+                "color": "yellow"
+              },
+              {
+                "value": 12,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Request Rate (req/s)",
+      "type": "graph",
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "rate(scheduler_plans_created_total[5m])",
+          "legendFormat": "Scheduler"
+        },
+        {
+          "expr": "rate(device_registrations_total[5m])",
+          "legendFormat": "Device Registry"
+        },
+        {
+          "expr": "rate(genealogy_recall_queries_total[5m])",
+          "legendFormat": "Genealogy"
+        }
+      ],
+      "yaxes": [
+        {
+          "format": "reqps",
+          "label": "Requests/sec"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Response Time (p95)",
+      "type": "graph",
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(scheduler_plan_creation_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "Scheduler"
+        }
+      ],
+      "yaxes": [
+        {
+          "format": "s",
+          "label": "Latency (seconds)"
+        }
+      ],
+      "thresholds": [
+        {
+          "value": 2.0,
+          "colorMode": "critical",
+          "op": "gt",
+          "fill": true,
+          "line": true
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Production Batches",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "sum(scheduler_plans_created_total)",
+          "legendFormat": "Total Plans"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Devices Registered",
+      "type": "stat",
+      "gridPos": {
+        "x": 4,
+        "y": 8,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "sum(device_registrations_total)",
+          "legendFormat": "Total Devices"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Device Registration Rate",
+      "type": "gauge",
+      "gridPos": {
+        "x": 8,
+        "y": 8,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "rate(device_registrations_total[5m])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "red"
+              },
+              {
+                "value": 0.5,
+                "color": "yellow"
+              },
+              {
+                "value": 1,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Recall Query Rate",
+      "type": "graph",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "rate(genealogy_recall_queries_total[5m])",
+          "legendFormat": "Genealogy"
+        }
+      ],
+      "yaxes": [
+        {
+          "format": "reqps",
+          "label": "Queries/sec"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Plan Errors",
+      "type": "graph",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(scheduler_plans_failed_total[5m])",
+          "legendFormat": "Scheduler"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Device Registration Duration (p95)",
+      "type": "graph",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(device_registration_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "Device Registry"
+        }
+      ],
+      "yaxes": [
+        {
+          "format": "s",
+          "label": "Seconds"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "CPU Usage by Service",
+      "type": "graph",
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(process_cpu_seconds_total[1m]) * 100",
+          "legendFormat": "{{ job }}"
+        }
+      ],
+      "yaxes": [
+        {
+          "format": "percent",
+          "label": "CPU %"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Memory Usage by Service",
+      "type": "graph",
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes / 1024 / 1024",
+          "legendFormat": "{{ job }}"
+        }
+      ],
+      "yaxes": [
+        {
+          "format": "mbytes",
+          "label": "Memory (MB)"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Total Recall Queries",
+      "type": "graph",
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "sum(genealogy_recall_queries_total)",
+          "legendFormat": "Genealogy"
+        }
+      ],
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "Queries"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Plan Creation Rate",
+      "type": "graph",
+      "gridPos": {
+        "x": 8,
+        "y": 28,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(scheduler_plans_created_total[5m])",
+          "legendFormat": "Scheduler"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Active Recall Queries",
+      "type": "stat",
+      "gridPos": {
+        "x": 16,
+        "y": 28,
+        "w": 4,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "sum(recall_query_active)"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "System Alerts",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 24,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "ALERTS{alertstate=\"firing\"}"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "alertname": "Alert",
+              "severity": "Severity",
+              "summary": "Summary",
+              "nfr": "NFR"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

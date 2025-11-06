@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package i40.quality.v1;
+
+option go_package = "github.com/i40/production-system/api/gen/go/quality/v1;qualityv1";
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// UC-3: Quality Disposition Event
+message QualityDispositionEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  common.v1.DeviceId device_id = 2;
+  string batch_id = 3;
+  common.v1.QualityStatus disposition = 4;
+  repeated FailureMode failure_modes = 5;
+  DispositionDecision decision = 6;
+  google.protobuf.Timestamp evaluated_at = 7;
+}
+
+message FailureMode {
+  string code = 1;
+  string description = 2;
+  Severity severity = 3;
+  string detected_by = 4;
+}
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_CRITICAL = 1;
+  SEVERITY_MAJOR = 2;
+  SEVERITY_MINOR = 3;
+  SEVERITY_COSMETIC = 4;
+}
+
+message DispositionDecision {
+  Route route = 1;
+  string reason = 2;
+  bool requires_rework = 3;
+  string rework_instructions = 4;
+}
+
+enum Route {
+  ROUTE_UNSPECIFIED = 0;
+  ROUTE_PASS_LANE = 1;
+  ROUTE_FAIL_LANE = 2;
+  ROUTE_REWORK_LANE = 3;
+  ROUTE_QUARANTINE = 4;
+}
+
+// Validation station claiming units
+message UnitClaimEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string station_id = 2;
+  common.v1.DeviceId device_id = 3;
+  string buffer_position = 4;
+  google.protobuf.Timestamp claimed_at = 5;
+}
+
+// Test metrics streaming
+message TestMetricsEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string station_id = 2;
+  common.v1.DeviceId device_id = 3;
+  string test_suite_id = 4;
+  repeated Measurement measurements = 5;
+  google.protobuf.Timestamp measured_at = 6;
+}
+
+message Measurement {
+  string parameter_name = 1;
+  double value = 2;
+  string unit = 3;
+  double lower_limit = 4;
+  double upper_limit = 5;
+  bool in_spec = 6;
+}
+
+// Quality rules/ML application
+message QualityRuleEvaluationEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  common.v1.DeviceId device_id = 2;
+  repeated RuleResult rule_results = 3;
+  double confidence_score = 4;
+  bool manual_review_required = 5;
+}
+
+message RuleResult {
+  string rule_id = 1;
+  string rule_description = 2;
+  bool passed = 3;
+  double score = 4;
+  map<string, string> evidence = 5;
+}

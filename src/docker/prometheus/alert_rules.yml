@@ -1,0 +1,194 @@
+groups:
+  - name: i40_production_alerts
+    interval: 30s
+    rules:
+      # Availability Alerts (NFR-A: 99.95% uptime)
+      - alert: ServiceDown
+        expr: up{job=~"scheduler|device-registry|genealogy-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          nfr: NFR-A
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has been down for more than 1 minute."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          nfr: NFR-A
+        annotations:
+          summary: "High error rate detected on {{ $labels.job }}"
+          description: "{{ $labels.job }} is experiencing {{ $value | humanizePercentage }} error rate."
+
+      # Performance Alerts (NFR-B: p95 < 2s)
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          nfr: NFR-B
+        annotations:
+          summary: "High latency on {{ $labels.job }}"
+          description: "95th percentile latency is {{ $value }}s, exceeding 2s threshold."
+
+      - alert: SlowKafkaConsumer
+        expr: kafka_consumer_lag > 1000
+        for: 10m
+        labels:
+          severity: warning
+          nfr: NFR-B
+        annotations:
+          summary: "Kafka consumer lag is high"
+          description: "Consumer {{ $labels.consumer_group }} has lag of {{ $value }} messages."
+
+      # Resource Alerts
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[1m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.job }}"
+          description: "CPU usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 / 1024 > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.job }}"
+          description: "Memory usage is {{ $value }}GB on {{ $labels.instance }}."
+
+      # Database Alerts
+      - alert: DatabaseConnectionPoolExhausted
+        expr: database_connections_active / database_connections_max > 0.9
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "{{ $labels.job }} is using {{ $value | humanizePercentage }} of available connections."
+
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, rate(database_query_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow database queries detected"
+          description: "95th percentile query time is {{ $value }}s."
+
+      # Kafka Alerts
+      - alert: KafkaProducerFailed
+        expr: rate(kafka_producer_errors_total[5m]) > 0.01
+        for: 2m
+        labels:
+          severity: critical
+          nfr: NFR-C
+        annotations:
+          summary: "Kafka producer failures detected"
+          description: "Producer {{ $labels.client_id }} is experiencing errors."
+
+      - alert: KafkaConsumerRebalancing
+        expr: rate(kafka_consumer_rebalances_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Frequent Kafka consumer rebalancing"
+          description: "Consumer group {{ $labels.consumer_group }} is rebalancing frequently."
+
+      # Business Metrics Alerts
+      - alert: HighProductionFailureRate
+        expr: rate(production_batch_failed_total[15m]) / rate(production_batch_total[15m]) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          nfr: NFR-C
+        annotations:
+          summary: "High production failure rate"
+          description: "Production failure rate is {{ $value | humanizePercentage }}."
+
+      - alert: QualityDispositionFailureSpike
+        expr: rate(quality_disposition_failed_total[10m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Quality failure spike detected"
+          description: "Quality failures have spiked to {{ $value }} failures/second."
+
+      # Data Quality Alerts
+      - alert: DataQualityScoreLow
+        expr: data_quality_overall_score < 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Data quality score is low"
+          description: "{{ $labels.source }} data quality score is {{ $value }}."
+
+      - alert: WeatherDataStale
+        expr: time() - weather_data_last_update_timestamp > 900
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Weather data is stale"
+          description: "Weather data hasn't been updated for {{ $value }} seconds."
+
+      # Genealogy & Traceability Alerts (NFR-G)
+      - alert: GenealogyRecordMissing
+        expr: rate(genealogy_record_missing_total[10m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          nfr: NFR-G
+        annotations:
+          summary: "Missing genealogy records detected"
+          description: "Genealogy records are missing for devices."
+
+      # Deployment Alerts (NFR-D)
+      - alert: DeploymentRolloutStuck
+        expr: kube_deployment_status_replicas_unavailable > 0
+        for: 10m
+        labels:
+          severity: critical
+          nfr: NFR-D
+        annotations:
+          summary: "Deployment rollout is stuck"
+          description: "Deployment {{ $labels.deployment }} has unavailable replicas."
+
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod is crash looping"
+          description: "Pod {{ $labels.pod }} is restarting frequently."
+
+      # Security Alerts (NFR-F)
+      - alert: UnauthorizedAccessAttempt
+        expr: rate(http_requests_total{status="401"}[5m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+          nfr: NFR-F
+        annotations:
+          summary: "Unauthorized access attempts detected"
+          description: "{{ $value }} unauthorized requests/second on {{ $labels.job }}."
+
+      # Disk Space Alert
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space is running low"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining on {{ $labels.instance }}."

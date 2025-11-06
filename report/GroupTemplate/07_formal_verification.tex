@@ -1,0 +1,84 @@
+Formal verification and validation (V\&V) were conducted on the system's control logic to provide mathematical assurance of correctness for critical safety and real-time properties. This rigorous approach utilized the real-time model checker UPPAAL (Version 5.0.0) on core control components. According to Bass et al., critical quality attributes such as safety and reliability require architectural-level analysis techniques, as they cannot be sufficiently validated through testing alone \cite{Bass2012}.
+
+\subsection{Formalization of System Requirements}
+
+The system’s concurrent and time-critical behavior was formally modeled as a Network of Timed Automata (NTA). The model is composed of interacting processes derived from two critical use cases: Automated Validation and Routing (\textit{UC-3}) and Safety Interlocks during Changeover (\textit{UC-5}). \\
+
+\subsubsection{UC-3: Routing Control Model}
+
+This model, derived from \textit{UC-3}, formalizes the hardware validation gate. It primarily consists of the \texttt{RoutingController} template, which evaluates the \texttt{UnitStatus} (PASS or FAIL) and triggers the appropriate routing synchronization channel (\texttt{routePackout} or \texttt{routeRework}).
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=\columnwidth]{charts/uc3.png}
+    \caption{UPPAAL Timed Automata Model for Routing Control (\textit{UC-3}).}
+    \label{fig:uc3_model}
+\end{figure}
+
+\newpage
+\subsubsection{UC-5: Safety Interlock and Changeover Model}
+
+This model, derived from \textit{UC-5}, formalizes the safety-critical changeover process. It involves the interaction of the \texttt{PLC}, \texttt{SafetyGuard}, and \texttt{Operator} templates, which are essential for verifying the safety invariant (S-01) and the bounded-time requirement (RT-03) during buffer draining.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=\columnwidth]{charts/uc5.png}
+    \caption{UPPAAL Timed Automata Model for Safety Interlock and Changeover (\textit{UC-5}).}
+    \label{fig:uc5_model}
+\end{figure}
+
+\subsubsection{Formal Specifications}
+
+The system requirements were translated into formally verifiable properties expressed in the UPPAAL Query Language (UQL). Table~\ref{formal_properties} summarizes the formalized properties and their corresponding queries.
+
+\begin{table}[!ht]
+\centering
+\footnotesize
+\caption{Formalized system properties and UPPAAL queries}
+\label{formal_properties} 
+\begin{tabularx}{\columnwidth}{l l X}
+\toprule
+\textbf{ID} & \textbf{Type} & \textbf{UPPAAL Query} \\
+\midrule
+S-01 & Safety &
+\code{A[] not (PLC.Running and SafetyGuard.Open)} \\
+L-02 & Liveness &
+\code{UnitStatus == FAIL -> E<> Unit.ReworkBay} \\
+RT-03 & Timing &
+\code{A[] (PLC.Drain -> PLC.Drain.x <= 5)} \\
+S-04 & Deadlock &
+\code{A[] not deadlock} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{V\&V Results and Counter-Examples}
+
+The UPPAAL verifier performed an exhaustive symbolic state-space search for all specified properties. The verification results are summarized in Table~\ref{tab:verification_results}.
+
+\begin{table}[th!]
+\centering
+\footnotesize
+\caption{Summary of formal verification results}
+\label{tab:verification_results}
+\begin{tabularx}{\columnwidth}{l l l X}
+\toprule
+\textbf{Property} & \textbf{Type} & \textbf{Result} & \textbf{Remarks} \\
+\midrule
+S-01 & Safety & Satisfied & Guard prevents operation \\
+L-02 & Liveness & Satisfied & Failed units routed to rework \\
+RT-03 & Timing & Satisfied & Draining bounded by 5 time units \\
+S-04 & Deadlock & Violated (initial) & Unbounded operator delay caused deadlock \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Analysis of Violated Property (S-04)}
+
+The initial UC-5 model in figure \ref{fig:uc5_model} reached a deadlocked state due to the absence of an upper time bound on operator actions during the changeover process. Specifically, if the operator delayed the swap indefinitely, the system could not progress. This issue was resolved by introducing a bounded timer of 60 time units, after which an error state is reached if the operator action has not been completed. This refinement eliminates the deadlock while preserving the intended safety behavior. This means that the system should have kind of timeout error implemented.
+
+\subsection{Conclusion}
+
+The formal verification process was crucial for identifying and correcting a critical design flaw related to deadlock freedom (S-04). After refining the model, all formalized safety, liveness, and real-time properties were successfully verified, and the final system model is guaranteed to be deadlock-free. This section directly addresses \textbf{RQ3} by demonstrating how formal verification enables early detection of architectural design flaws that are difficult to uncover through testing alone.
+
+\newpage

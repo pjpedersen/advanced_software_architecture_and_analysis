@@ -1,0 +1,12 @@
+scheduler:58260
+plc-adapter-p1:58261
+plc-adapter-p2:58262
+engraver-adapter:58263
+hmi-service:58264
+flash-station:58265
+release-policy:58266
+device-registry:58267
+validation-controller:58268
+quality-service:58269
+template-service:58270
+genealogy-service:58271

@@ -1,0 +1,17 @@
+go 1.21
+
+use (
+	./services/go/pkg
+	./services/go/scheduler
+	./services/go/device-registry
+	./services/go/plc-adapter-p1
+	./services/go/plc-adapter-p2
+	./services/go/quality-service
+	./services/go/genealogy-service
+	./services/go/template-service
+	./services/go/engraver-adapter
+	./services/go/hmi-service
+	./services/go/flash-station
+	./services/go/release-policy
+	./services/go/validation-controller
+)

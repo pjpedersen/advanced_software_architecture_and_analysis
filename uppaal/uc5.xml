@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+// --- Time Constraints (Constants) ---
+const int T_DRAIN = 5;       
+const int T_MAX_SWAP = 60;   
+
+// --- Clocks ---
+clock x; 
+
+// --- Global Variables ---
+bool correctBin = false; 
+
+// --- Synchronization Channels ---
+urgent chan changeoverStart, bufferEmpty;
+urgent chan guardOpen, guardClose;
+urgent chan changeoverDone, promptRetry;</declaration>
+	<template>
+		<name>SafetyGuard</name>
+		<location id="id0" x="-391" y="-161">
+			<name x="-416" y="-204">Closed</name>
+		</location>
+		<location id="id1" x="-93" y="-161">
+			<name x="-110" y="-204">Open</name>
+		</location>
+		<init ref="id0"/>
+		<transition id="id2">
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="synchronisation" x="-280" y="-51">guardClose?</label>
+			<nail x="-255" y="-51"/>
+		</transition>
+		<transition id="id3">
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="synchronisation" x="-297" y="-187">guardOpen?</label>
+		</transition>
+	</template>
+	<template>
+		<name>Operator</name>
+		<location id="id4" x="-476" y="-306">
+			<name x="-486" y="-340">Idle</name>
+		</location>
+		<location id="id5" x="-255" y="-306">
+			<name x="-265" y="-340">Notified</name>
+		</location>
+		<location id="id6" x="-25" y="-306">
+			<name x="-35" y="-340">Swapping</name>
+		</location>
+		<location id="id7" x="272" y="-306">
+			<name x="262" y="-340">DoneSwap</name>
+		</location>
+		<init ref="id4"/>
+		<transition id="id8">
+			<source ref="id7"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-136" y="-110">guardClose!</label>
+			<nail x="-102" y="-119"/>
+		</transition>
+		<transition id="id9">
+			<source ref="id6"/>
+			<target ref="id7"/>
+			<label kind="assignment" x="59" y="-331">correctBin := true</label>
+		</transition>
+		<transition id="id10">
+			<source ref="id5"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="-161" y="-331">guardOpen!</label>
+		</transition>
+		<transition id="id11">
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-425" y="-331">bufferEmpty?</label>
+		</transition>
+	</template>
+	<template>
+		<name x="5" y="5">PLC</name>
+		<declaration>// Place local declarations here.
+</declaration>
+		<location id="id12" x="-569" y="-391">
+			<name x="-579" y="-425">Running</name>
+		</location>
+		<location id="id13" x="-212" y="-391">
+			<name x="-178" y="-425">Draining</name>
+			<label kind="invariant" x="-195" y="-399">x &lt;= T_DRAIN</label>
+		</location>
+		<location id="id14" x="-204" y="-59">
+			<name x="-178" y="-68">WaitingSwap</name>
+			<label kind="invariant" x="-187" y="-51">x &lt;= T_MAX_SWAP</label>
+		</location>
+		<location id="id15" x="-195" y="255">
+			<name x="-178" y="238">SwapInProgress</name>
+			<label kind="invariant" x="-178" y="263">x &lt;= T_MAX_SWAP</label>
+		</location>
+		<location id="id16" x="-569" y="255">
+			<name x="-579" y="221">VerifyColor</name>
+		</location>
+		<location id="id17" x="-204" y="-238">
+			<name x="-170" y="-246">ReadyToSignal</name>
+			<committed/>
+		</location>
+		<init ref="id12"/>
+		<transition id="id18">
+			<source ref="id17"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-187" y="-178">true</label>
+			<label kind="synchronisation" x="-187" y="-153">bufferEmpty!</label>
+		</transition>
+		<transition id="id19">
+			<source ref="id13"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-195" y="-331">x == T_DRAIN</label>
+			<label kind="assignment" x="-187" y="-297">x := 0</label>
+		</transition>
+		<transition id="id20">
+			<source ref="id16"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-484" y="34">correctBin == false</label>
+			<label kind="synchronisation" x="-484" y="59">promptRetry!</label>
+			<label kind="assignment" x="-484" y="85">x := 0</label>
+		</transition>
+		<transition id="id21">
+			<source ref="id16"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-731" y="-110">correctBin == true</label>
+			<label kind="synchronisation" x="-705" y="-85">changeoverDone!</label>
+		</transition>
+		<transition id="id22">
+			<source ref="id15"/>
+			<target ref="id16"/>
+			<label kind="guard" x="-408" y="263">true</label>
+			<label kind="synchronisation" x="-433" y="289">guardClose!</label>
+		</transition>
+		<transition id="id23">
+			<source ref="id14"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-187" y="85">true</label>
+			<label kind="synchronisation" x="-187" y="59">guardOpen!</label>
+		</transition>
+		<transition id="id24">
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="guard" x="-425" y="-442">true</label>
+			<label kind="assignment" x="-433" y="-467">x := 0</label>
+		</transition>
+	</template>
+	<system>P1 = PLC();
+Guard = SafetyGuard();
+Op = Operator();
+
+system P1, Guard, Op;</system>
+	<queries>
+		<option key="--diagnostic" value="0"/>
+		<query>
+			<formula>A[] not (P1.Running and Guard.Open)</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2025-11-13 21:12:51 +0100">
+				<option key="--diagnostic" value="0"/>
+			</result>
+		</query>
+		<query>
+			<formula>A&lt;&gt; P1.Running</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2025-11-13 21:12:53 +0100">
+				<option key="--diagnostic" value="0"/>
+			</result>
+		</query>
+		<query>
+			<formula>A[] not deadlock</formula>
+			<comment/>
+			<option key="--diagnostic" value="2"/>
+			<result outcome="failure" type="quality" timestamp="2025-11-13 21:12:58 +0100">
+				<option key="--diagnostic" value="2"/>
+			</result>
+		</query>
+		<query>
+			<formula>E&lt;&gt; deadlock</formula>
+			<comment/>
+			<option key="--diagnostic" value="0"/>
+			<result outcome="success" type="quality" timestamp="2025-11-13 21:13:04 +0100">
+				<option key="--diagnostic" value="0"/>
+			</result>
+		</query>
+	</queries>
+</nta>

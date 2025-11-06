@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package i40.device.v1;
+
+option go_package = "github.com/i40/production-system/api/gen/go/device/v1;devicev1";
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// UC-2: Device Registration Event
+message DeviceRegisteredEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  common.v1.DeviceId device_id = 2;
+  string firmware_version = 3;
+  string firmware_hash = 4;
+  CryptographicIdentity identity = 5;
+  GenealogyLink genealogy = 6;
+  google.protobuf.Timestamp registered_at = 7;
+}
+
+message CryptographicIdentity {
+  IdentityType type = 1;
+  bytes certificate = 2;
+  string key_id = 3;
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+enum IdentityType {
+  IDENTITY_UNSPECIFIED = 0;
+  IDENTITY_X509_CERT = 1;
+  IDENTITY_SYMMETRIC_KEY = 2;
+}
+
+message GenealogyLink {
+  string enclosure_serial = 1;
+  string pellet_lot_id = 2;
+  common.v1.ColorCode enclosure_color = 3;
+  string pcb_batch_id = 4;
+  string pcb_serial = 5;
+  string firmware_artifact_id = 6;
+  repeated ValidationResult validation_results = 7;
+}
+
+message ValidationResult {
+  string test_id = 1;
+  string test_type = 2; // ICT, FUNCTIONAL, BOUNDARY_SCAN
+  bool passed = 3;
+  map<string, double> measurements = 4;
+  google.protobuf.Timestamp tested_at = 5;
+}
+
+// Firmware flashing
+message FirmwareFlashRequestEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string pcb_id = 2;
+  string sku = 3;
+  string bom_version = 4;
+  string operator_id = 5;
+}
+
+message FirmwareFlashResponseEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string pcb_id = 2;
+  FirmwareArtifact firmware = 3;
+  common.v1.ResultCode result = 4;
+  string rejection_reason = 5;
+}
+
+message FirmwareArtifact {
+  string artifact_id = 1;
+  string version = 2;
+  string hash_sha256 = 3;
+  bytes signature = 4;
+  string signer_key_id = 5;
+  google.protobuf.Timestamp built_at = 6;
+  bool deprecated = 7;
+}
+
+// Post-flash test
+message PostFlashTestEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string pcb_id = 2;
+  repeated TestStep test_steps = 3;
+  bool all_passed = 4;
+  google.protobuf.Timestamp completed_at = 5;
+}
+
+message TestStep {
+  string step_id = 1;
+  string description = 2;
+  bool passed = 3;
+  map<string, double> measurements = 4;
+  string failure_reason = 5;
+}

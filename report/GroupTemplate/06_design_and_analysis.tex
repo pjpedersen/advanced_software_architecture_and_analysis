@@ -1,0 +1,168 @@
+To rigorously define the system structure and behavior, the EAST-ADL2 architecture description language was adopted. The modeling effort for this section focuses on the Analysis Level, following the methodology proposed by Kang et al. \cite{young2011}, . This approach captures abstract functional behaviors and interactions independent of implementation details, creating a necessary foundation for the formal verification described in Section \ref{sec:formal_v_and_v}.
+
+\subsection{Overall System Architecture}
+The high-level system topology, illustrated in Figure \ref{fig:system}, addresses the challenge of integrating heterogeneous OT devices, such as PLCs, robots, and engravers, with IT-based MES services. Traditional manufacturing systems often rely on point-to-point integration, which leads to tight coupling and brittle deployments. To mitigate this, the design utilizes a manufacturing service bus.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=\linewidth]{charts/system_diagram.png}
+\caption{System Diagram illustrating layered architecture.}
+\label{fig:system}
+\end{figure}
+
+As depicted in the middle layer of Figure \ref{fig:system}, this bus acts as the asynchronous backbone of the system. This architecturally significant decision directly supports the interoperability quality attribute. By requiring all components to communicate through the bus rather than directly with one another, high-level components such as the production scheduler remain agnostic to the specific hardware protocols used by the machinery, such as EuroMap or OPC UA.
+
+\subsection{Functional Analysis Architecture}
+While the system diagram depicts the physical and logical hierarchy, Figure \ref{fig:faa} details the functional data flow through the Functional Analysis Architecture (FAA). In EAST-ADL2 terms, the system is modeled as a collection of interacting \code{AnalysisFunctionTypes}. The FAA reveals the adapter pattern used to sanitize data entering the system.
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=\linewidth]{charts/functional_analysis_architecture.png}
+\caption{Functional Analysis Architecture (FAA).}
+\label{fig:faa}
+\end{figure}
+
+The architecture is partitioned into three functional groups. First, the IT Layer Functional Group hosts the stateless business logic services, such as the \code{Scheduler\_AF} and \code{GenealogyService\_AF}. These components consume standardized events. Second, the DMZ / Adapter Layer serves as the architectural boundary. Components like the \code{PLC\_ConveyorAdapter\_AF} act as an anti-corruption layer, translating raw, device-specific telemetry from the OT layer into the canonical data model of the system. Finally, the OT Layer Functional Group represents the physical functional devices.
+
+\newpage
+
+\subsection{Tactics for Quality Attribute Scenarios}
+\label{sec:tactics}
+
+The following architectural tactics have been selected and implemented to satisfy the response measures from Table \ref{table:qas}. These tactics map technical decisions to the business requirements outlined in the quality attribute scenarios. Inspiration for these tactics were sourced from chapters 4 to 13 of \textit{Software Architecture in Practice}\cite{Bass2012}. In Figure \ref{fig:deploy} below, an example of such a tactics tree is presented:
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\linewidth]{charts/deployability.png}
+    \caption{Deployability Tactics by Bass et. al\cite{Bass2012}}
+    \label{fig:deploy}
+\end{figure}
+
+\subsubsection{Scalability and Performance}
+
+Scalability is achieved by the microservice design and the asynchronous messaging infrastructure. Because each service is stateless, multiple instances of any service can run in parallel behind a load balancer to handle increasing traffic. The event bus supports partitioned, concurrent message processing, allowing throughput to scale linearly as new instances are added. \\
+
+
+\subsubsection{Availability and Continuous Operation}
+
+To support continuous 24/7 operation, the prototype emphasizes redundancy and fault tolerance. All microservices can be deployed in an active-active manner with multiple instances; if one instance fails, others seamlessly take over its load. Because state is externalized to the database, a new instance can be started at any time without losing application state, and any instance can handle any request in progress. The adapter services emit periodic heartbeat events so that if a critical device or adapter stops responding, the system detects it promptly and can trigger alerts or failover actions before the issue escalates. \\
+
+\subsubsection{Deployability}
+The architecture also integrates a continuous deployment strategy to maintain availability during updates. Using a blue-green deployment approach with canary releases, new service versions are deployed alongside the old and gradually fed a small percentage of traffic. Automated health checks monitor the new version; if any anomaly or SLO violation is detected, the system can instantly roll back to the stable version, achieving near-zero downtime for releases. \\
+
+This approach was validated in the section \ref{sec:evaluation}, which simulated a rolling update of the Genealogy service under load and achieved negligible downtime. Such tactics ensure that software enhancements or fixes can be introduced without interrupting the production line, thereby preserving high availability. \\
+
+\subsubsection{Modifiability and Extensibility}
+
+Modifiability is supported through loose coupling and clear interface contracts. In this event-driven architecture, components interact only via well-defined event types, so a change in one service or the addition of a new service has minimal impact on others as long as the event schemas remain consistent. A canonical data model and centralized schema registry govern these message definitions. Schema changes are versioned and checked for compatibility in the CI/CD pipeline (contract testing) to prevent breaking changes, enabling the system to evolve safely over time. \\
+
+The use of dedicated hardware adapter services also makes the system highly extensible. If new equipment is added or a device’s protocol changes, one can develop or update an adapter microservice for that device without altering the core workflow or other services. The core services, such as the Scheduler, Registry and Genealogy, remain unaware of device-specific details, which means new capabilities or hardware can be integrated by "plugging in" new adapters or event consumers. \\ 
+
+Additionally, feature toggles, through environment variable configuration, as specified in the principles of the 12-factor app, are used to enable or disable certain functionalities at runtime, allowing gradual rollout of new features\cite{Neelan2025}. Overall, these practices ensure the architecture can accommodate new requirements or technologies with minimal disruption. \\
+
+\subsubsection{Correctness and Validation}
+
+The prototype incorporates formal and runtime measures to ensure correctness of system behavior. Key safety and liveness properties of the design were formally verified before implementation, confirming that critical invariants (e.g., interlock conditions between stations, proper sequencing of events) hold under all anticipated scenarios. This analysis guided the implementation so that the event workflows and state management in the code preserve those verified properties, reducing the risk of design flaws. \\
+
+At runtime, each production unit is tagged with a unique trace identifier that is propagated through all events and records. This guarantees end-to-end traceability and prevents any mix-up of units or loss of data, contributing to functional correctness. The Genealogy service’s data model explicitly links each unit’s components and process outcomes, ensuring that any recall or audit query can retrieve complete and correct information about a product’s history. \\
+
+\subsection{Prototype Implementation}
+The prototype implementation realizes the proposed architecture as a containerized, event-driven microservice ecosystem designed to meet Industry 4.0 requirements for 24/7 availability, continuous deployment, interoperability, and traceability. The system combines microservices with an event-driven messaging backbone, enabling real-time coordination among heterogeneous manufacturing components while maintaining loose coupling. All inter-service communication is asynchronous via a distributed Kafka message bus, and shared state is persisted in a PostgreSQL database system (enabling consistency across stateless services). \\
+
+\subsubsection{System Architecture and Key Components}
+
+The prototype consists of multiple independently deployable services, each encapsulating a specific function of the smart manufacturing line. From Figure \ref{fig:system}, the major components are: Scheduler, Device Registry, Genealogy, Hardware Adapters along with the Event Bus and the Database. The following is a high-level walkthrough of the service implementations.\\
+
+Scheduler Service: Orchestrates production plans and schedules. When a production plan is confirmed (e.g., by the Production Manager), the scheduler computes the plan and publishes a \code{ProductionPlan} event to initiate the manufacturing sequence. This service exposes a REST endpoint (e.g., \texttt{/api/v1/plans}) for external requests to create or update plans, serving as the entry point into the event-driven pipeline. The scheduler also ensures that an invalid \code{ProductionPlan} cannot be submitted, e.g. by checking for conflicting resource allocations as seen in Listing \ref{listing:valid} below, which is an extract of the Go-based scheduler implementation :
+
+\begin{listing}[!ht]
+\begin{minted}
+[
+frame=lines,
+framesep=2mm,
+baselinestretch=1.2,
+bgcolor=LightGray,
+fontsize=\footnotesize,
+linenos,
+breaklines
+]
+{go}
+func (s *Service) validateResourceAllocations(allocs map[string]ResourceAllocation) error {
+ resourceWindows := make(map[string][]ResourceAllocation)
+
+ for _, alloc := range allocs {
+  resourceWindows[alloc.ResourceID] = append(resourceWindows[alloc.ResourceID], alloc)
+ }
+
+ for resourceID, windows := range resourceWindows {
+  for i := 0; i < len(windows); i++ {
+   for j := i + 1; j < len(windows); j++ {
+    if s.timeWindowsOverlap(windows[i], windows[j]) {
+     return fmt.Errorf("resource %s has overlapping allocations", resourceID)
+ // ...
+ return nil
+}
+\end{minted}
+\caption{Scheduler - Validation of Resource Allocation}
+\label{listing:valid}
+\end{listing}
+
+\newpage
+
+Internally the \code{ResourceAllocation} is modeled using Protobuf as shown in Listing \ref{listing:proto}, where this message is itself is wrapped in a \code{ProductionPlanEvent} protobuf when transmitted between services:
+
+\begin{listing}[!ht]
+\begin{minted}
+[
+frame=lines,
+framesep=2mm,
+baselinestretch=1.2,
+bgcolor=LightGray,
+fontsize=\footnotesize,
+breaklines
+]
+{proto}
+message ResourceAllocation {
+  string resource_id = 1;
+  string resource_type = 2; // e.g. PLC, ENGRAVER...
+  google.protobuf.Timestamp allocated_from = 3;
+  google.protobuf.Timestamp allocated_until = 4;
+}
+\end{minted}
+\caption{Protobuf definition of \code{ResourceAllocation}}
+\label{listing:proto}
+\end{listing}
+
+Currently the scheduler service uses very simplified resource allocation scheduling logic for making production plans, that does not allow for more complex manufacturing use cases and workflows. The production plan can be considered a distributed finite state machine, where ACK's from hardware adapters are received by the scheduler over the message bus and in turn update the state of the production plan through a state transition, allowing for formal verification and validation of the production plan's state space. \\
+
+Device Registry Service: Manages device provisioning and registration. For example, upon a successful firmware flash at the Flash Station, this service issues a unique device identity and publishes a \code{DeviceRegistered} event. This ensures each IoT device is uniquely identified and tracked as soon as it passes the flashing stage, supporting end-to-end traceability. \\
+
+Genealogy Service: Maintains the product genealogy (traceability) record. It subscribes to events from various stations (assembly completions, testing results, etc.) to build a complete lineage for each unit. This service enables queries for product history and recall scenarios by linking each unit’s components, firmware version, and test outcomes in a connected data model. A Quality Manager’s recall query (\textit{UC-6}), for instance, is handled by the Genealogy service, which returns the list of affected units based on the stored traceability graph. \\
+
+
+% Make references to figure 2, including the coupling between adapters, mqtt manufacturing bus, IT and OT, 
+Hardware Adapter Services: The adapter microservices bridge the IT layer services and the OT layer devices, through the MQTT manufacturing service bus, as seen in Figure \ref{fig:faa}. On the other side of the MQTT manufacturing service bus, a logical service is deployed to convert from whichever event was submitted to MQTT, to the appropriate hardware interface of the factory floor equipment (PLCs, robot arms, conveyor belts, engravers, sensors). In the prototype implementation, this side of the system is mocked using Python-based device simulations, although the implementation for the adapter to python device simulation coupling is still incomplete. \\
+
+Each adapter translates high-level events into device-specific commands and emits new events with the results. For example, an Engraver Controller listens for an event indicating a unit is ready for engraving, fetches the required engraving data (such as a serial number or pattern) from the Genealogy service, performs the simulated engraving action, and then publishes an \code{EngravingCompleted} event. These adapters isolate hardware-specific protocols and timing from the core services, allowing the domain logic (scheduling, tracking, etc.) to remain device-agnostic. \\
+
+Event Bus and Database: The Kafka event bus brokers all communication between services, using standardized message schemas so that all components interpret messages consistently. 
+% A schema registry (with, e.g., Protobuf definitions) ensures that event formats evolve in a backward-compatible manner as the system grows. 
+The PostgreSQL database provides durable storage for persistent data (production plans, device records, genealogy links). By writing all state changes to the database immediately, services can remain stateless and interchangeable, which simplifies failover and scaling. \\
+
+
+\subsubsection{Implementation Summary}
+The system architecture implements a prototype Industry 4.0 production line simulation that validates the design choices. Following RQ1 and RQ2, the use of decoupled, message-driven services demonstrates how real-time coordination can be achieved in a heterogeneous environment while upholding critical quality attributes.
+
+% \subsection{Prototype Implementation}
+% \input{08_prototype}
+
+
+% \subsection{Analysis of Quality Attribute Support}
+% The design decisions formalized in these models directly satisfy the quality attribute scenarios defined in Table I.
+
+% First, the explicit separation of the adapter layer secures modifiability (\textit{UC-4}). As shown in Figure 3, the \code{Engraver\_Logic\_AF} isolates the specific engraving hardware. If the physical engraver is replaced with a different model, only this adapter requires refactoring, leaving the scheduler and order management logic untouched.
+
+% Second, the architecture employs a dual-bus strategy as a performance tactic. Figure \ref{fig:faa} illustrates the use of an MQTT Broker at the OT edge for lightweight, high-frequency telemetry, distinct from the Kafka infrastructure used for durable enterprise events. This prevents sensor noise from overwhelming the persistence layer.
+
+% Finally, the star topology centered around the messaging infrastructure ensures traceability (\textit{UC-6}). The \code{GenealogyService\_AF} can passively subscribe to all events, ranging from order creation to shipping. This guarantees that no production step occurs without a persistent record, satisfying strict audit requirements without impacting production latency.

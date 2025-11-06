@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package i40.production.v1;
+
+option go_package = "github.com/i40/production-system/api/gen/go/production/v1;productionv1";
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// UC-1: Production Plan Event
+message ProductionPlanEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string plan_id = 2;
+  repeated BatchJob batches = 3;
+  repeated ChangeoverWindow changeover_windows = 4;
+  google.protobuf.Timestamp start_time = 5;
+  google.protobuf.Timestamp end_time = 6;
+  map<string, ResourceAllocation> resource_allocations = 7;
+}
+
+message BatchJob {
+  string batch_id = 1;
+  string product_sku = 2;
+  int32 quantity = 3;
+  common.v1.ColorCode color = 4;
+  string engraving_template_id = 5;
+  google.protobuf.Timestamp scheduled_start = 6;
+  google.protobuf.Duration estimated_duration = 7;
+  int32 priority = 8;
+}
+
+message ChangeoverWindow {
+  string changeover_id = 1;
+  common.v1.ColorCode from_color = 2;
+  common.v1.ColorCode to_color = 3;
+  google.protobuf.Timestamp scheduled_time = 4;
+  google.protobuf.Duration estimated_duration = 5;
+  bool requires_operator_confirmation = 6;
+}
+
+message ResourceAllocation {
+  string resource_id = 1;
+  string resource_type = 2; // PLC, ROBOT, ENGRAVER, etc.
+  google.protobuf.Timestamp allocated_from = 3;
+  google.protobuf.Timestamp allocated_until = 4;
+}
+
+// Adapter acknowledgments
+message AdapterAckEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string plan_id = 2;
+  string adapter_id = 3;
+  string adapter_type = 4; // PLC_P1, PLC_P2, ENGRAVER
+  common.v1.ResultCode result = 5;
+  google.protobuf.Timestamp ack_timestamp = 6;
+  common.v1.ErrorDetail error = 7;
+}
+
+// UC-5: Changeover events
+message ChangeoverStartEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string changeover_id = 2;
+  common.v1.ColorCode from_color = 3;
+  common.v1.ColorCode to_color = 4;
+  string operator_id = 5;
+}
+
+message ChangeoverDoneEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string changeover_id = 2;
+  common.v1.ColorCode new_color = 3;
+  bool color_sensor_verified = 4;
+  int32 scrap_count = 5;
+  google.protobuf.Timestamp completed_at = 6;
+}
+
+// HMI operator prompts
+message OperatorPromptEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string prompt_id = 2;
+  string station_id = 3;
+  PromptType type = 4;
+  string message = 5;
+  repeated string options = 6;
+  bool requires_confirmation = 7;
+  google.protobuf.Duration timeout = 8;
+}
+
+enum PromptType {
+  PROMPT_INFO = 0;
+  PROMPT_WARNING = 1;
+  PROMPT_CONFIRMATION = 2;
+  PROMPT_INPUT = 3;
+}
+
+message OperatorResponseEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string prompt_id = 2;
+  string operator_id = 3;
+  string response = 4;
+  google.protobuf.Timestamp response_time = 5;
+}
+
+// WIP tracking
+message WIPUpdateEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string batch_id = 2;
+  string station_id = 3;
+  int32 units_completed = 4;
+  int32 units_in_progress = 5;
+  int32 units_failed = 6;
+  map<string, double> kpis = 7;
+}

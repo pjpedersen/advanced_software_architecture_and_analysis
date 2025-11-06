@@ -1,0 +1,458 @@
+---
+# Device Registry Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: device-registry
+  namespace: i40-production
+  labels:
+    app: device-registry
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: device-registry
+  template:
+    metadata:
+      labels:
+        app: device-registry
+    spec:
+      containers:
+      - name: device-registry
+        image: i40-device-registry:latest
+        ports:
+        - containerPort: 8081
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: DATABASE_URL
+          value: "postgres://postgres:postgres@postgresql:5432/i40_production?sslmode=disable"
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 200m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: device-registry
+  namespace: i40-production
+spec:
+  selector:
+    app: device-registry
+  ports:
+  - protocol: TCP
+    port: 8081
+    targetPort: 8081
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: device-registry-hpa
+  namespace: i40-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: device-registry
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+# Genealogy Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: genealogy-service
+  namespace: i40-production
+  labels:
+    app: genealogy-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: genealogy-service
+  template:
+    metadata:
+      labels:
+        app: genealogy-service
+    spec:
+      containers:
+      - name: genealogy-service
+        image: i40-genealogy-service:latest
+        ports:
+        - containerPort: 8089
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: DATABASE_URL
+          value: "postgres://postgres:postgres@postgresql:5432/i40_production?sslmode=disable"
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 200m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8089
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8089
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: genealogy-service
+  namespace: i40-production
+spec:
+  selector:
+    app: genealogy-service
+  ports:
+  - protocol: TCP
+    port: 8089
+    targetPort: 8089
+---
+# Template Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: template-service
+  namespace: i40-production
+  labels:
+    app: template-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: template-service
+  template:
+    metadata:
+      labels:
+        app: template-service
+    spec:
+      containers:
+      - name: template-service
+        image: i40-template-service:latest
+        ports:
+        - containerPort: 8086
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: DATABASE_URL
+          value: "postgres://postgres:postgres@postgresql:5432/i40_production?sslmode=disable"
+        resources:
+          limits:
+            cpu: 300m
+            memory: 384Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8086
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8086
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: template-service
+  namespace: i40-production
+spec:
+  selector:
+    app: template-service
+  ports:
+  - protocol: TCP
+    port: 8086
+    targetPort: 8086
+---
+# Quality Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quality-service
+  namespace: i40-production
+  labels:
+    app: quality-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: quality-service
+  template:
+    metadata:
+      labels:
+        app: quality-service
+    spec:
+      containers:
+      - name: quality-service
+        image: i40-quality-service:latest
+        ports:
+        - containerPort: 8085
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        resources:
+          limits:
+            cpu: 400m
+            memory: 512Mi
+---
+# PLC Adapters
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plc-adapter-p1
+  namespace: i40-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: plc-adapter-p1
+  template:
+    metadata:
+      labels:
+        app: plc-adapter-p1
+    spec:
+      containers:
+      - name: plc-adapter-p1
+        image: i40-plc-adapter-p1:latest
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: MQTT_BROKER
+          value: "mosquitto:1883"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plc-adapter-p2
+  namespace: i40-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: plc-adapter-p2
+  template:
+    metadata:
+      labels:
+        app: plc-adapter-p2
+    spec:
+      containers:
+      - name: plc-adapter-p2
+        image: i40-plc-adapter-p2:latest
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: MQTT_BROKER
+          value: "mosquitto:1883"
+---
+# HMI Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hmi-service
+  namespace: i40-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hmi-service
+  template:
+    metadata:
+      labels:
+        app: hmi-service
+    spec:
+      containers:
+      - name: hmi-service
+        image: i40-hmi-service:latest
+        ports:
+        - containerPort: 8088
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hmi-service
+  namespace: i40-production
+spec:
+  selector:
+    app: hmi-service
+  ports:
+  - protocol: TCP
+    port: 8088
+    targetPort: 8088
+---
+# Validation Controller
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: validation-controller
+  namespace: i40-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: validation-controller
+  template:
+    metadata:
+      labels:
+        app: validation-controller
+    spec:
+      containers:
+      - name: validation-controller
+        image: i40-validation-controller:latest
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+---
+# Flash Station
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flash-station
+  namespace: i40-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flash-station
+  template:
+    metadata:
+      labels:
+        app: flash-station
+    spec:
+      containers:
+      - name: flash-station
+        image: i40-flash-station:latest
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+---
+# Release Policy
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: release-policy
+  namespace: i40-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: release-policy
+  template:
+    metadata:
+      labels:
+        app: release-policy
+    spec:
+      containers:
+      - name: release-policy
+        image: i40-release-policy:latest
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+---
+# Engraver Adapter
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engraver-adapter
+  namespace: i40-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engraver-adapter
+  template:
+    metadata:
+      labels:
+        app: engraver-adapter
+    spec:
+      containers:
+      - name: engraver-adapter
+        image: i40-engraver-adapter:latest
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+---
+# Python Services
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-aggregator
+  namespace: i40-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-aggregator
+  template:
+    metadata:
+      labels:
+        app: weather-aggregator
+    spec:
+      containers:
+      - name: weather-aggregator
+        image: i40-weather-aggregator:latest
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: WEATHER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: weather-api-secret
+              key: api-key
+              optional: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-quality
+  namespace: i40-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-quality
+  template:
+    metadata:
+      labels:
+        app: data-quality
+    spec:
+      containers:
+      - name: data-quality
+        image: i40-data-quality:latest
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"

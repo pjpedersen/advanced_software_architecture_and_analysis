@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package i40.genealogy.v1;
+
+option go_package = "github.com/i40/production-system/api/gen/go/genealogy/v1;genealogyv1";
+
+import "common/v1/common.proto";
+import "device/v1/events.proto";
+import "google/protobuf/timestamp.proto";
+
+// UC-8: Genealogy tracking
+message GenealogyRecordEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  common.v1.DeviceId device_id = 2;
+  MaterialGenealogy materials = 3;
+  ProcessGenealogy process = 4;
+  SoftwareGenealogy software = 5;
+  ShippingInfo shipping = 6;
+  google.protobuf.Timestamp recorded_at = 7;
+}
+
+message MaterialGenealogy {
+  string pellet_lot_id = 1;
+  string pellet_supplier = 2;
+  google.protobuf.Timestamp pellet_received_date = 3;
+  common.v1.ColorCode color = 4;
+  string pcb_batch_id = 5;
+  string pcb_supplier = 6;
+  google.protobuf.Timestamp pcb_manufactured_date = 7;
+  repeated Component components = 8;
+}
+
+message Component {
+  string part_number = 1;
+  string lot_id = 2;
+  string supplier = 3;
+  google.protobuf.Timestamp date_code = 4;
+}
+
+message ProcessGenealogy {
+  repeated ProcessStep steps = 1;
+  map<string, string> station_ids = 2;
+  map<string, string> operator_ids = 3;
+  repeated device.v1.ValidationResult validations = 4;
+}
+
+message ProcessStep {
+  string step_id = 1;
+  string station_id = 2;
+  string operation_type = 3;
+  google.protobuf.Timestamp started_at = 4;
+  google.protobuf.Timestamp completed_at = 5;
+  bool successful = 6;
+  map<string, string> parameters = 7;
+}
+
+message SoftwareGenealogy {
+  string firmware_version = 1;
+  string firmware_hash = 2;
+  string firmware_artifact_id = 3;
+  string build_id = 4;
+  google.protobuf.Timestamp build_timestamp = 5;
+  string git_commit_sha = 6;
+  repeated string dependencies = 7;
+}
+
+message ShippingInfo {
+  string shipment_id = 1;
+  string shipping_lot = 2;
+  string customer_order_id = 3;
+  string customer_id = 4;
+  google.protobuf.Timestamp shipped_at = 5;
+  string destination = 6;
+}
+
+// Recall query
+message RecallQueryRequestEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string query_id = 2;
+  string requester_id = 3;
+  RecallCriteria criteria = 4;
+  google.protobuf.Timestamp requested_at = 5;
+}
+
+message RecallCriteria {
+  repeated string firmware_versions = 1;
+  repeated common.v1.ColorCode colors = 2;
+  repeated string validation_patterns = 3;
+  repeated string pellet_lot_ids = 4;
+  repeated string pcb_batch_ids = 5;
+  google.protobuf.Timestamp production_date_from = 6;
+  google.protobuf.Timestamp production_date_to = 7;
+}
+
+message RecallQueryResponseEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  string query_id = 2;
+  repeated RecallItem affected_devices = 3;
+  int32 total_count = 4;
+  google.protobuf.Timestamp generated_at = 5;
+  string report_url = 6;
+}
+
+message RecallItem {
+  common.v1.DeviceId device_id = 1;
+  string customer_id = 2;
+  string shipment_id = 3;
+  repeated string match_reasons = 4;
+  string contact_info = 5;
+}
+
+// OTA update locking for recalled devices
+message OTALockEvent {
+  common.v1.EventMetadata metadata = 1;
+
+  repeated string device_unit_ids = 2;
+  string reason = 3;
+  bool allow_updates = 4;
+  google.protobuf.Timestamp locked_at = 5;
+}

@@ -1,0 +1,33 @@
+\label{sec:qas}
+
+The quality attribute scenarios are developed based on the method presented by Bass et al. in Chapter 3.3 of \textit{Software Architecture in Practice}\cite{Bass2012}. These scenarios define the performance, availability, and security boundaries required in this manufacturing execution context. They cover critical operations ranging from enclosure engraving, flashing devices, deployment of services to long-term data genealogy retention. The specific quality attribute scenarios chosen to drive the architecture are defined in Table \ref{table:qas}. From these scenarios, the tactics will be used to shape the architecture in section \ref{sec:design_and_analysis_modeling}.
+
+\begin{table*}[h!]
+\centering
+\begin{tabular}{|| c | c | p{3cm} |  p{15mm} |  p{20mm}  | p{30mm} | p{22mm} ||} 
+ \hline
+ UC & Source of Stimulus & \centering Stimulus & Environment & \centering Artifact & Response & Response Measure\\ [0.5ex] 
+ \hline\hline
+ UC-1 & Production Manager & Confirms a scheduled plan & Steady-state & Scheduler service & Compute plan and publish \code{ProductionPlan}; adapters ACK & p95 latency < 2s  \\ 
+  \hline
+ UC-2 & Flash Station & Post‑flash test success & Steady-state & Device Registry & Issue unit identity; publish \code{DeviceRegistered} & p95 latency < 1s; idempotent \\
+  \hline
+ UC-3 & Conveyor 2 & Receives unit for testing & Steady-state & Validation Station & Run validation ICT, classify, emit Pass/Fail & p99 processing < 30s; no data loss \\
+  \hline
+ UC-4 & Scheduler & Receives raw enclosure from robot arm & Steady-state & Engraver Controller & Fetch toolpath with DPM from genealogy; engrave; emit Finish & start latency < 5s \\
+  \hline
+ UC-5 & Scheduler & Triggers color changeover & steady-state; pellets available & Moulding Machine & interlock enforced; operator swaps pellets; plc verifies and resumes & moulding machine steady state < 15min\\
+ \hline
+ UC-6 & Quality Manager & Runs recall query & Normal Ops; DB healthy & Genealogy service & Execute query; produce list; secure access & p95 query < 2s \par no unauthorized \\
+ \hline
+\end{tabular}
+\caption{Quality Attribute Scenarios}
+\label{table:qas}
+\end{table*}
+
+\newpage
+
+
+% Description of the overall architecture designs
+% Argue for tactics used to archieve the QASes
+% Discuss the trade-offs

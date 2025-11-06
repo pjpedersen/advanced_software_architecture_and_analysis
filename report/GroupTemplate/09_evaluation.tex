@@ -1,0 +1,249 @@
+This section empirically evaluates the proposed architecture with respect to
+RQ1 (real-time coordination) and RQ2 (availability and deployability). The evaluation focuses on the system boundary
+\texttt{POST /api/v1/plans} (\textit{UC-1}), because it is the operator-visible entry point
+for starting production.
+
+\subsection{Scoping}
+\label{sec:eval-scoping}
+
+Evaluate whether the containerized prototype (Scheduler API + Kafka + PostgreSQL + simulated
+PLC adapters) support real-time plan submission
+and operational resilience, with respect to p95 latency, throughput, error/availability
+signals, deployment time, and downtime, from the perspective of an operator/DevOps
+engineer. 
+
+\subsection{Planning}
+\label{sec:eval-planning}
+
+We evaluate the plan-submission boundary and compare latency to the UC-1 response
+measure (p95 latency $< 2$s). Independent variables are offered load and injected
+operational events (failure and deployment). Dependent variables are p95 latency,
+achieved throughput, error indicators (HTTP non-2xx and connection failures),
+deployment time, and downtime. Table~\ref{tab:eval-variables} defines variables, metrics,
+and success criteria.
+
+\begin{table}[H]
+\centering
+\caption{Variables, metrics, and success criteria}
+\label{tab:eval-variables}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{@{}lX@{}}
+\hline
+\textbf{Element} & \textbf{Definition} \\
+\hline
+Boundary & \texttt{POST /api/v1/plans} \\
+IV1: Load & Load generator setting: 10 / 20 / 40 (reported as ``Load'' in S1 tables) \\
+IV2: Event & None (S1), adapter termination (S2), service restart/rollout (S3) \\
+DV: p95 latency & 95th percentile request latency (from \texttt{k6}: \texttt{http\_req\_duration p(95)}) \\
+DV: Throughput & Achieved requests/s (from \texttt{k6}: \texttt{http\_reqs rate}) \\
+DV: Error indicator & HTTP non-2xx responses (from \texttt{k6}: \texttt{http\_non2xx}) + connection failures (HTTP 000 from probe log) \\
+DV: Deploy time & Time from restart start to service ready (from restart event log and \texttt{/ready} probe) \\
+DV: Downtime & Longest continuous period without successful probe responses \\
+Success criteria & UC-1: p95 $<2$s, RQ2: boundary remains usable during failure/deploy, with bounded disruption \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Operation}
+\label{sec:eval-operation}
+
+Tests were executed locally on a developer workstation using Docker Compose, with all
+services (Scheduler API, Kafka, PostgreSQL, simulated PLC adapters) and the load generator
+(\texttt{k6}) running on the same host. Therefore, absolute performance values reflect this
+single-machine testbed rather than a distributed deployment.
+
+
+
+\texttt{k6} uses a constant-arrival-rate model. In this setup, the offered request rate is derived
+from the ``Load'' setting via \texttt{RATE = LOAD $\times$ CONCURRENCY}, with \texttt{CONCURRENCY=50}
+(thus S1 offered load is approximately 500/1000/2000 req/s for load 10/20/40).
+When offered load exceeds the system capacity, \texttt{k6} reports \texttt{dropped\_iterations}.
+Reported throughput is the achieved \texttt{http\_reqs rate}.
+
+Table~\ref{tab:eval-protocol} summarises the procedure. To reduce accidental variance,
+each run uses the same endpoint/payload and fixed durations. 
+
+\begin{table}[H]
+\centering
+\caption{Execution protocol (operation phase)}
+\label{tab:eval-protocol}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{@{}cX@{}}
+\hline
+\textbf{Sc.} & \textbf{Protocol (per run)} \\
+\hline
+S1 &
+Target \texttt{POST /api/v1/plans}. Load settings: 10/20/40. Duration: 60s.
+Replications: $N=5$ per setting. Store raw \texttt{k6} output and summary export; parse CSV. \\
+S2 &
+Constant load setting: 20 for 120s. Fault injection: terminate PLC Adapter P2 at
+$t\approx 30$-$60$s. Replications: $N=3$. Record \texttt{k6} output and probe log. \\
+S3 &
+Constant load setting: 20 for 120s. Deployment action: restart/roll out
+\texttt{quality-service} at $t\approx 30$-$60$s. Replications: $N=3$.
+Record deploy time, downtime (1 req/s probe), and \texttt{k6} output. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Analysis and interpretation}
+\label{sec:eval-analysis}
+
+\subsubsection{Pilot test}
+A pilot run at load setting 20 (3 runs, 60s each) shows low p95 variance, supporting the
+choice of $N=5$ for S1. Table~\ref{tab:eval-pilot} reports the pilot p95 results.
+
+\begin{table}[H]
+\centering
+\caption{Pilot: p95 latency for S1 at load setting 20 (3 runs)}
+\label{tab:eval-pilot}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}cr@{}}
+\hline
+\textbf{Run} & \textbf{p95 [ms]} \\
+\hline
+1 & 981.5 \\
+2 & 924.3 \\
+3 & 902.6 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{S1: Real-time plan creation under load (RQ1)}
+Table~\ref{tab:eval-s1} reports descriptive statistics (mean and standard deviation across
+$N=5$ runs). Small numbers of HTTP non-2xx responses were observed at load settings 10 and 20.
+
+\begin{table}[H]
+\centering
+\caption{S1 results (5 runs per load setting, 60s each)}
+\label{tab:eval-s1}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{@{}c r r c@{}}
+\hline
+\textbf{Load} &
+\textbf{p95 [ms] (mean$\pm$sd)} &
+\textbf{Thr. [req/s] (mean$\pm$sd)} &
+\textbf{Non-2xx} \\
+\hline
+10 & 296.1$\pm$129.1 & 494.9$\pm$2.7  & 6  \\
+20 & 924.9$\pm$32.8  & 499.9$\pm$9.1  & 69 \\
+40 & 943.6$\pm$40.0  & 460.9$\pm$20.4 & 0  \\
+\hline
+\end{tabularx}
+\end{table}
+
+\noindent\textbf{Interpretation (RQ1).}
+Across all tested load settings, p95 latency remains below the \textit{UC-1} requirement of 2 seconds,
+so the plan-submission boundary meets the real-time constraint in this test environment. Achieved throughput
+plateaus around $\approx$500 req/s and drops at load setting 40, indicating saturation in the current
+single-host setup.
+The observed non-2xx counts are low relative to total requests ($<0.05\%$).
+
+\subsubsection{S2: Availability during PLC Adapter P2 failure (RQ2)}
+Table~\ref{tab:eval-s2} shows boundary behaviour for plan submission under constant load while Adapter P2
+is terminated. Probe logs show zero downtime at the \texttt{/plans} boundary in all runs.
+
+\begin{table}[H]
+\centering
+\caption{S2 results: PLC Adapter P2 terminated during load (120s)}
+\label{tab:eval-s2}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}c r r c@{}}
+\hline
+\textbf{Run} & \textbf{p95 [ms]} & \textbf{Thr. [req/s]} & \textbf{Non-2xx} \\
+\hline
+1 & 1587.7 & 838.6 & 0   \\
+2 & 981.0  & 759.5 & 0   \\
+3 & 898.8  & 645.7 & 214 \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Interpretation (RQ2, boundary availability).}
+When Adapter P2 is terminated, the plan-submission boundary remains usable from the client’s HTTP perspective.
+Probe logs indicate no downtime and \texttt{k6} reports p95 latency below 2 seconds in all runs.
+One run exhibits a small fraction of non-2xx responses, suggesting transient errors under load and fault injection.
+Overall, the results are consistent with the event-driven design. Plan submission is buffered by the event bus and
+does not require the adapter to be alive at request time.
+
+Because the architecture is event-driven, a healthy plan-submission boundary does not guarantee that
+downstream processing (adapter consumption) recovers quickly. To measure end-to-end recovery more directly,
+future runs should include Kafka consumer lag/backlog drain time after adapter restart.
+
+\subsubsection{S3: Deployability during service restart/rollout (RQ2)}
+Table~\ref{tab:eval-s3} summarises restart/rollout time and estimated downtime for \texttt{quality-service}.
+
+\begin{table}[H]
+\centering
+\caption{S3 results: restart/rollout of quality-service (120s)}
+\label{tab:eval-s3}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}c r r c@{}}
+\hline
+\textbf{Run} & \textbf{Deploy [s]} & \textbf{Down [s]} & \textbf{Non-2xx} \\
+\hline
+1 & 3 & 1 & 0  \\
+2 & 2 & 1 & 0  \\
+3 & 3 & 1 & 31 \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\noindent\textbf{Interpretation (RQ2, deployability).}
+The deployment action completes quickly (2-3s), and measured readiness downtime is low (1s) across runs.
+At the same time, plan submission remains largely stable (non-2xx close to zero), indicating that restarting this
+non-critical service does not substantially disrupt the plan-submission boundary in this setup.
+
+Table~\ref{tab:eval-summary} summarises the evidence mapped to the research questions.
+
+\begin{table}[H]
+\centering
+\caption{Evidence summary mapped to research questions}
+\label{tab:eval-summary}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{@{}lXc@{}}
+\hline
+\textbf{Claim} & \textbf{Evidence} & \textbf{Support} \\
+\hline
+RQ1: Real-time boundary & S1: p95 $<2$s across loads, achieved throughput plateaus, low non-2xx rate & Strong (testbed) \\
+RQ2: Boundary availability (failure) & S2: probe downtime 0s during adapter termination, p95 $<2$s & Moderate (boundary) \\
+RQ2: Deployability isolation & S3: deploy completes in 2-3s, readiness downtime $\approx$1s, /plans largely stable & Moderate (boundary) \\
+End-to-end recovery & Not measured directly (needs consumer lag/backlog drain metric) & Missing \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Validity considerations}
+\label{sec:eval-validity}
+
+Table~\ref{tab:eval-validity} summarises threats to validity and mitigations.
+
+\begin{table}[H]
+\centering
+\caption{Threats to validity and mitigations}
+\label{tab:eval-validity}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{@{}lX@{}}
+\hline
+\textbf{Type} & \textbf{Threat and mitigation} \\
+\hline
+Internal &
+Variance from kill timing, restart timing, and local resource contention. Mitigated by replications and fixed durations. \\
+Construct &
+Boundary availability is not end-to-end availability in event-driven systems. Future work should add consumer lag/backlog drain metrics. \\
+Construct &
+\texttt{k6} uses an open-model load generator. When offered load exceeds capacity, \texttt{dropped\_iterations} occur and achieved throughput should be interpreted as saturation evidence. \\
+External &
+Real factories have different hardware, networks, and burst patterns, this was conducted on a single-host. Results should be interpreted comparatively. \\
+\hline
+\end{tabularx}
+\end{table}

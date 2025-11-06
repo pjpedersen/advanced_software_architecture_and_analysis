@@ -1,0 +1,29 @@
+This report investigated the applicability of an event-driven microservice architecture for Resilient Smart Manufacturing, validated through the design, formal verification, and prototyping of an Industry 4.0 production line software system for IoT weather displays. By synthesizing a hybrid architectural approach with formal methods, the research questions posed in Section \ref{sec:problem} were addressed. \\
+
+Regarding RQ1 and RQ2, the prototype demonstrated that a hybrid architecture utilizing asynchronous messaging (Kafka) and the adapter pattern successfully supports real-time coordination in a heterogeneous environment. The prototype, through evaluation, also proved that specific architectural tactics, such as stateless microservices, database externalization, and the use of IT-OT adapters are essential for achieving high availability and deployability. The system effectively decoupled high-level IT business logic from low-level OT device protocols, maintaining p95 latencies well below the 2-second requirement even under load. \\
+
+Addressing RQ3, formal verification proved to be a critical tool for reducing operational risk. The UPPAAL modeling of the safety interlocks and changeover logic identified a potential deadlock scenario caused by unbounded operator delays. \\
+
+Finally, concerning RQ4, the proposed architecture establishes a viable foundation for scheduler optimization of changeover, like between different product colors and variations, along with genealogy tracking. However, the practical implementation currently serves as an architectural framework rather than a fully operational production system. The prototype validates the structural feasibility, but the depth of logic required for complex, real-world manufacturing scenarios remains a work in progress.
+
+\newpage
+
+\subsection{Discussion}
+\label{sec:Discussion}
+While the results are promising, several limitations and trade-offs merit discussion. The current evaluation was conducted on a containerized single-host testbed. While this verified the functional interactions and deployability tactics, it does not fully replicate the network latencies and hardware constraints of a distributed factory floor. \\
+
+A significant limitation in the current prototype is the incomplete integration between the hardware adapters and the MQTT-based OT layer simulation. The evaluation focused on the boundary between the Scheduler and the Adapters; however, the end-to-end loop including the Python-based simulation of physical devices (robots, engravers) was not fully integrated via the MQTT bus. Consequently, the results reflect the resilience of the control software rather than the full cyber-physical loop. \\
+
+Furthermore, the scheduling logic implemented is relatively static. In a real-world setting, the scheduler would require complex dynamic computation to optimize for resource contention and changing priorities. The current lack of this complexity inhibits the ability to test certain performance tactics.
+
+\subsection{Future Work}
+\label{sec:future_work}
+To evolve this architectural prototype into a production-grade system, future work should focus on deepening the implementation, integrating physical hardware, and expanding the scope of verification. \\
+
+A primary focus is finalizing the MQTT integration to complete the end-to-end testing against the Python-based device simulators, and once the software simulation is fully functional, the architecture should be evaluated against physical hardware, such as actual PLCs and robotic arms. Moving to physical devices is necessary to determine if the adapter pattern can withstand real-world noise and network jitter, which are often absent in simulation environments. \\
+
+Additionally, the scheduler service requires further development to handle operational anomalies. Future work should focus on dynamic re-scheduling algorithms capable of automated recovery from manufacturing defects and equipment faults. To enable such responsive decision-making, the system requires enhanced observability. \\
+
+To fully satisfy the interoperability requirement, future iterations should integrate with external ERP systems, such as SAP. This would effectively test the architecture's ability to bridge "shop floor" operations with "top floor" business planning. \\
+
+By addressing these gaps, the proposed framework can advance from a validated architectural concept to a resilient, scalable solution suitable for the Smart Manufacturing industry.

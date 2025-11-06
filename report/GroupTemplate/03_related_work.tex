@@ -1,0 +1,53 @@
+This chapter reviews the existing body of academic literature to situate our research questions within the current state-of-the-art. The primary goal is to identify established architectural patterns, highlight existing challenges, and pinpoint the specific research gap that this work addresses. To ensure a rigorous and repeatable process, this study adopts a Systematic Literature Review (SLR) methodology, following the principles and procedures outlined by Renner, Müller, and Theissler \cite{Renner2022State}.
+
+
+\subsection{Systematic Literature Review}
+Our review process began with the formulation of search strings derived from the key concepts in our research questions (RQ1 and RQ2), "industry 4.0", "microservices", "smart factory", "event-driven architecture", "real-time", "high availability", and "architectural tactics". These queries were executed across the prominent academic databases, IEEE Xplore and ACM Digital Library. \\
+
+\begin{enumerate}
+    \item RQ1: \small \texttt{("event-driven" OR microservices) AND "real-time" AND ("Industry 4.0" OR "smart factory" OR "IIoT")}
+    \item RQ2: \small \texttt{("architectural tactics" OR "design patterns") AND (availability OR security OR deployability) AND ("Industry 4.0" OR "smart manufacturing")}
+\end{enumerate}
+
+The initial search, conducted on November 9th, 2025, yielded a total of 88 articles. After applying a predefined inclusion criteria for papers released after 2015 that explicitly discuss software architecture in an industrial context and removing duplicates, a total of 15 were selected for full text analysis and review.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\columnwidth]{charts/keyword_analysis.pdf}
+  \caption{Distribution of Top 10 Most Prevalent Research Keywords}
+  \label{fig:keywords}
+\end{figure}
+
+
+\subsection{The Architectural Demands of Industry 4.0}
+As highlighted by RQ1, the paradigm of Industry 4.0 represents a fundamental shift from traditional, monolithic automation systems towards interconnected, data-driven, and decentralized Industrial Cyber-Physical Systems (ICPS). This evolution introduces significant architectural challenges. Legacy systems, often characterized by proprietary protocols and centralized control, lack the flexibility, scalability, and interoperability required for modern smart manufacturing\cite{Wollschlaeger2017}. \\
+
+A key challenge lies in the integration of a heterogeneous technology stack, where Operational Technology (OT) comprising PLCs, SCADA systems, and robots must seamlessly coordinate with Information Technology (IT) infrastructure, including cloud platforms, databases, and IoT devices. This convergence demands architectures that are not only robust and reliable but also agile enough to accommodate rapid changes and new technologies\cite{Sehr2021}.
+
+\subsection{Architectural Paradigms for Real-Time Industrial Systems}
+The microservice architecture, which structures an application as a collection of loosely coupled, independently deployable services, has gained significant traction in the industrial domain. Its inherent modularity aligns well with the modular nature of modern production lines\cite{Alam2018}. This approach contrasts with traditional monolithic systems where the entire control logic is tightly coupled, making updates and maintenance complex and risky \cite{Rastogi2025}. By isolating the logic for each station, developers can update or scale specific parts of the production line without impacting the entire system. \\
+
+However, managing a distributed system composed of numerous microservices introduces its own set of challenges, particularly concerning deployment, scaling, and ensuring the high availability required by industrial systems \cite{Aziz2023}. To address these challenges, container orchestration platforms like Kubernetes have become instrumental. Kubernetes automates the deployment and management of containerized microservices, providing mechanisms for zero-downtime deployments through strategies like rolling updates. Moreover, it offers robust high-availability tactics, such as automatic self-healing of failed services, load balancing, and service replication, which are critical for maintaining continuous operation in a smart factory environment \cite{Rastogi2025}.
+
+\subsection{Integration of event-driven architecture in ICPS}
+\label{sec:mom}
+An event-driven architecture (EDA) is a frequently proposed solution for achieving robust and resilient real-time communication within distributed microservice deployments. Rastogi et al. implement this architecture using a message-oriented middleware (MOM) solution, where an event broker such as RabbitMQ or Kafka manages the coordination and transport of events between various system services. This approach facilitates asynchronous and decoupled communication, providing the flexibility and interoperability essential for Industry 4.0 manufacturing systems\cite{Rastogi2025}.
+
+% Using a message-oriented middleware(MOM)-based microservice architecture, the control logic of for individual manufacturing stations can be encapsulated into so called "digital twins"\cite{Aziz2023}.  
+
+% Existing cloud orchestration software like Kubernetes can be leveraged, to achieve fault tolerance and high availability,  \cite{Rastogi2025}
+
+% One such paradigm is the employment of "digital twins", 
+
+% Discuss how microservices can be used to encapsulate the control logic for individual manufacturing stations. Also something about the use of kubernetes for zero-downtime deployments and high-availability tactics.
+
+% Discuss EDA(event driven architecture) in the context of I4 and smart factories, and how it is a good fit for microservices.
+
+
+% RQ1: ("event-driven" OR microservices) AND "real-time" AND ("Industry 4.0" OR "smart factory" OR "IIoT")
+
+% IEEE Xplorer: 39
+% ACM Digital Library: 49
+
+% RQ2: ("architectural tactics" OR "design patterns") AND (availability OR security OR deployability) AND ("Industry 4.0" OR "smart manufacturing")
+
